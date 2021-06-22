@@ -106,7 +106,7 @@ class CustomerDetail(
         Return 404 if no customer found with that ID.
         """
 
-        if request.user.customer.id == kwargs["pk"] or request.user.is_superuser:
+        if request.user.is_customer and request.user.customer.id == kwargs["pk"] or request.user.is_superuser:
             return self.update(request, *args, **kwargs)
         return Response(
                 {"detail": "Only Superuser or The Requested Account Can Perform This Action"},
@@ -128,7 +128,7 @@ class CustomerDetail(
         Return 404 if no customer found with that ID.
         """
 
-        if request.user.customer.id == kwargs["pk"] or request.user.is_superuser:
+        if request.user.is_customer and request.user.customer.id == kwargs["pk"] or request.user.is_superuser:
             return self.destroy(request, *args, **kwargs)
         return Response(
                 {"detail": "Only Superuser or The Requested Account Can Perform This Action"},

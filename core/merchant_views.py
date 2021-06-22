@@ -105,7 +105,7 @@ class MerchantDetail(
         Return 404 if no merchant found with that ID.
         """
 
-        if request.user.merchant.id == kwargs["pk"] or request.user.is_superuser:
+        if request.user.is_merchant and request.user.merchant.id == kwargs["pk"] or request.user.is_superuser:
             return self.update(request, *args, **kwargs)
         return Response(
                 {"detail": "Only Superuser or The Requested Account Can Perform This Action"},
@@ -127,7 +127,7 @@ class MerchantDetail(
         Return 404 if no merchant found with that ID.
         """
 
-        if request.user.merchant.id == kwargs["pk"] or request.user.is_superuser:
+        if request.user.is_merchant and request.user.merchant.id == kwargs["pk"] or request.user.is_superuser:
             return self.destroy(request, *args, **kwargs)
         return Response(
                 {"detail": "Only Superuser or The Requested Account Can Perform This Action"},
