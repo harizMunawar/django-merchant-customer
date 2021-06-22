@@ -9,7 +9,7 @@ class UserManager(BaseUserManager):
         if not username:
             raise ValueError("Data is not complete")
 
-        if (not is_merchant and not is_customer) or (is_merchant and is_customer) or kwargs["is_superuser"]:
+        if (not is_merchant and not is_customer) or (is_merchant and is_customer) or not kwargs["is_superuser"]:
             raise ValidationError("A user must either be merchant or customer or a superuser")
 
         user = self.model(username=username, is_merchant=is_merchant, is_customer=is_customer, **kwargs)
