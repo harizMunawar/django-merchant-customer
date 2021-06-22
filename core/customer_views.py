@@ -125,7 +125,6 @@ class CustomerDetail(
         Return 204 with no content if customer exists and deleted successfully.
         Return 404 if no customer found with that ID.
         """
-        print(kwargs["pk"])
 
         if request.user.customer.id == kwargs["pk"] or request.user.is_superuser:
             return self.destroy(request, *args, **kwargs)
