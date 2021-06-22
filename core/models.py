@@ -2,6 +2,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.dispatch import receiver
+from django.contrib.auth import get_user_model
 
 class UserManager(BaseUserManager):
     def create_user(self, username, is_merchant, is_customer, password=None, **kwargs):
@@ -48,14 +49,14 @@ class User(AbstractBaseUser):
         return self.is_superuser
 
 class Merchant(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="merchant")
+    user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE, related_name="merchant", default=None)
     balance = models.IntegerField()
 
     def __str__(self):
         return self.user.username
 
 class Customer(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="customer")
+    user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE, related_name="customer", default=None)
     balance = models.IntegerField()
 
     def __str__(self):
@@ -63,12 +64,16 @@ class Customer(models.Model):
 
 @receiver(models.signals.post_save, sender=User)
 def auto_create_extended_object(sender, instance, created, **kwargs):
-    if instance.is_merchant:
-        Merchant.objects.get_or_create(user=instance, defaults={
+    if instance.is_merchant and created:
+        merc, created = Merchant.objects.get_or_create(user=instance, defaults={
             'balance': 0,
         })
 
-    if instance.is_customer:
+    if instance.is_customer and created:
         Customer.objects.get_or_create(user=instance, defaults={
             'balance': 0,
         })
+
+@receiver(models.signals.post_delete, sender=Merchant)
+def auto_delete_user(sender, instance, **kwargs):
+    User.objects.get(id=instance.user.id).delete()

@@ -83,6 +83,7 @@ class MerchantDetail(
         return self.retrieve(request, *args, **kwargs)
 
     @swagger_auto_schema(
+        request_body=MerchantSerializer(),
         responses={
             200: MerchantSerializer(),
             400: "Bad Request",

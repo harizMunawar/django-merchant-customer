@@ -3,9 +3,10 @@ from rest_framework import status
 from rest_framework import mixins
 from rest_framework import generics
 from rest_framework import views
+from rest_framework import permissions
 
 from core.serializers import CreateUserSerializer, CustomerSerializer
-from core.models import Customer
+from core.models import Customer, Merchant
 from core.permissions import IsStaffOrReadOnly
 
 from drf_yasg.utils import swagger_auto_schema
@@ -114,3 +115,30 @@ class CustomerDetail(
         Return 404 if no customer found with that ID.
         """
         return self.destroy(request, *args, **kwargs)
+
+class CustomerBuy(views.APIView):
+    permission_classes = [permissions.IsAuthenticated,]
+
+    def post(self, request, cust_id, merc_id, price):
+        if request.user.customer.id != cust_id:
+            return Response(
+                {"detail": "Only Authorized Customer Can Make A Transaction Using Their ID"},
+                status=status.HTTP_403_FORBIDDEN)
+
+        customer = Customer.objects.get(id=cust_id)
+        merchant = Merchant.objects.get(id=merc_id)
+
+        if customer.balance < price:
+            return Response(
+                {"detail": "Customer Did Not Have Enough Balance To Complete The Transaction"},
+                status=status.HTTP_402_PAYMENT_REQUIRED)
+
+        customer.balance -= price
+        customer.save()
+
+        merchant.balance += price
+        merchant.save()
+
+        return Response(
+                {"detail": f"Transaction Successfull, Your Remaining Balance {customer.balance}"},
+                status=status.HTTP_200_OK)
