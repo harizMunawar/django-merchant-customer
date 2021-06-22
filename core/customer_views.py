@@ -52,6 +52,7 @@ class CustomerList(views.APIView):
         if serializer.is_valid():
             user = serializer.save()
             user.is_customer = True
+            user.set_password(serializer.data["password"])
             user.save()
             
             customer = Customer.objects.get(id=user.customer.id)
@@ -67,7 +68,7 @@ class CustomerDetail(
 
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
-    permission_classes = [IsStaffOrReadOnly,]
+    permission_classes = [permissions.IsAuthenticated,]
 
     @swagger_auto_schema(
         responses={
@@ -89,6 +90,7 @@ class CustomerDetail(
         responses={
             200: CustomerSerializer(),
             400: "Bad Request",
+            403: "Either You Aren't Authenticated Or You Didn't Have Permission To Request",
             404: "Invalid Customer's ID or Not Found"
         }
     )
@@ -96,15 +98,22 @@ class CustomerDetail(
         """
         Customer's Update
 
+        Can only be done by an admin account or by requested account, return 403 otherwise.
         Return 200 with customer serializer if customer exists and updated successfully.
         Return 400 if request is invalid.
         Return 404 if no customer found with that ID.
         """
-        return self.update(request, *args, **kwargs)
+
+        if request.user.customer.id == kwargs["pk"] or request.user.is_superuser:
+            return self.update(request, *args, **kwargs)
+        return Response(
+                {"detail": "Only Superuser or The Requested Account Can Perform This Action"},
+                status=status.HTTP_403_FORBIDDEN)
 
     @swagger_auto_schema(
         responses={
             204: "No Content",
+            403: "Either You Aren't Authenticated Or You Didn't Have Permission To Request",
             404: "Invalid Customer's ID or Not Found"
         }
     )
@@ -112,10 +121,17 @@ class CustomerDetail(
         """
         Customer's Delete
 
+        Can only be done by an admin account or by requested account, return 403 otherwise.
         Return 204 with no content if customer exists and deleted successfully.
         Return 404 if no customer found with that ID.
         """
-        return self.destroy(request, *args, **kwargs)
+        print(kwargs["pk"])
+
+        if request.user.customer.id == kwargs["pk"] or request.user.is_superuser:
+            return self.destroy(request, *args, **kwargs)
+        return Response(
+                {"detail": "Only Superuser or The Requested Account Can Perform This Action"},
+                status=status.HTTP_403_FORBIDDEN)
 
 class CustomerBuy(views.APIView):
     permission_classes = [permissions.IsAuthenticated,]

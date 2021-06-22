@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework import mixins
 from rest_framework import generics
 from rest_framework import views
+from rest_framework import permissions
 
 from core.serializers import CreateUserSerializer, MerchantSerializer
 from core.models import Merchant
@@ -50,6 +51,7 @@ class MerchantList(views.APIView):
         if serializer.is_valid():
             user = serializer.save()
             user.is_merchant = True
+            user.set_password(serializer.data["password"])
             user.save()
 
             merchant = Merchant.objects.get(id=user.merchant.id)
@@ -65,7 +67,7 @@ class MerchantDetail(
 
     queryset = Merchant.objects.all()
     serializer_class = MerchantSerializer
-    permission_classes = [IsStaffOrReadOnly,]
+    permission_classes = [permissions.IsAuthenticated,]
 
     @swagger_auto_schema(
         responses={
@@ -87,6 +89,7 @@ class MerchantDetail(
         responses={
             200: MerchantSerializer(),
             400: "Bad Request",
+            403: "Either You Aren't Authenticated Or You Didn't Have Permission To Request",
             404: "Invalid Merchant's ID or Not Found"
         }
     )
@@ -94,15 +97,22 @@ class MerchantDetail(
         """
         Merchant's Update
 
+        Can only be done by an admin account or by requested account, return 403 otherwise.
         Return 200 with merchant serializer if merchant exists and updated successfully.
         Return 400 if request is invalid.
         Return 404 if no merchant found with that ID.
         """
-        return self.update(request, *args, **kwargs)
+
+        if request.user.merchant.id == kwargs["pk"] or request.user.is_superuser:
+            return self.update(request, *args, **kwargs)
+        return Response(
+                {"detail": "Only Superuser or The Requested Account Can Perform This Action"},
+                status=status.HTTP_403_FORBIDDEN)
 
     @swagger_auto_schema(
         responses={
             204: "No Content",
+            403: "Either You Aren't Authenticated Or You Didn't Have Permission To Request",
             404: "Invalid Merchant's ID or Not Found"
         }
     )
@@ -110,7 +120,13 @@ class MerchantDetail(
         """
         Merchant's Delete
 
+        Can only be done by an admin account or by requested account, return 403 otherwise.
         Return 204 with no content if merchant exists and deleted successfully.
         Return 404 if no merchant found with that ID.
         """
-        return self.destroy(request, *args, **kwargs)
+
+        if request.user.merchant.id == kwargs["pk"] or request.user.is_superuser:
+            return self.destroy(request, *args, **kwargs)
+        return Response(
+                {"detail": "Only Superuser or The Requested Account Can Perform This Action"},
+                status=status.HTTP_403_FORBIDDEN)

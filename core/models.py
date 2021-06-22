@@ -64,16 +64,20 @@ class Customer(models.Model):
 
 @receiver(models.signals.post_save, sender=User)
 def auto_create_extended_object(sender, instance, created, **kwargs):
-    if instance.is_merchant and created:
+    if instance.is_merchant:
         merc, created = Merchant.objects.get_or_create(user=instance, defaults={
             'balance': 0,
         })
 
-    if instance.is_customer and created:
+    if instance.is_customer:
         Customer.objects.get_or_create(user=instance, defaults={
             'balance': 0,
         })
 
 @receiver(models.signals.post_delete, sender=Merchant)
 def auto_delete_user(sender, instance, **kwargs):
+    User.objects.get(id=instance.user.id).delete()
+
+@receiver(models.signals.post_delete, sender=Customer)
+def auto_delete_user2(sender, instance, **kwargs):
     User.objects.get(id=instance.user.id).delete()
