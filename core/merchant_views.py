@@ -28,6 +28,8 @@ class MerchantList(views.APIView):
         """
         merchant = Merchant.objects.all()
         serializer = MerchantSerializer(merchant, many=True)
+        if not serializer.data:
+            return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(serializer.data)
 
     @swagger_auto_schema(
