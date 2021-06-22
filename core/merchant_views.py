@@ -41,6 +41,7 @@ class MerchantDetail(
 
     queryset = Merchant.objects.all()
     serializer_class = MerchantSerializer
+    permission_classes = [IsStaffOrReadOnly,]
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)

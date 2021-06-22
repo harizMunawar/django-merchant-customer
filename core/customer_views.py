@@ -40,6 +40,7 @@ class CustomerDetail(
 
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
+    permission_classes = [IsStaffOrReadOnly,]
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
