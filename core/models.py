@@ -65,7 +65,7 @@ class Customer(models.Model):
 @receiver(models.signals.post_save, sender=User)
 def auto_create_extended_object(sender, instance, created, **kwargs):
     if instance.is_merchant:
-        merc, created = Merchant.objects.get_or_create(user=instance, defaults={
+        Merchant.objects.get_or_create(user=instance, defaults={
             'balance': 0,
         })
 
