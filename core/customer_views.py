@@ -10,6 +10,7 @@ from core.models import Customer, Merchant
 from core.permissions import IsStaffOrReadOnly
 
 from drf_yasg.utils import swagger_auto_schema
+from django.shortcuts import get_object_or_404
 
 class CustomerList(views.APIView):
     permission_classes = [IsStaffOrReadOnly,]
@@ -119,14 +120,30 @@ class CustomerDetail(
 class CustomerBuy(views.APIView):
     permission_classes = [permissions.IsAuthenticated,]
 
-    def post(self, request, cust_id, merc_id, price):
-        if request.user.customer.id != cust_id:
+    @swagger_auto_schema(
+        responses={
+            200: CustomerSerializer(),
+            400: "Bad Request",
+            402: "Customer Didn't Have Enough Balance To Complete The Transaction",
+            403: "Only Authorized Customer Can Make A Transaction Using Their ID",
+            404: "The Merchant ID Is Invalid, Thus Merchant Are Not Found"
+        }
+    )
+    def post(self, request, merc_id, price):
+        """
+        Transaction
+
+        Can only be done by a customer user, return 403 otherwise.
+        Return 402 if customer doesn't have enough balance.
+        Return 404 if no merchant with that ID exists.
+        """
+        if not request.user.is_customer:
             return Response(
                 {"detail": "Only Authorized Customer Can Make A Transaction Using Their ID"},
                 status=status.HTTP_403_FORBIDDEN)
 
-        customer = Customer.objects.get(id=cust_id)
-        merchant = Merchant.objects.get(id=merc_id)
+        customer = get_object_or_404(Customer, id=request.user.customer.id)
+        merchant = get_object_or_404(Merchant, id=merc_id)
 
         if customer.balance < price:
             return Response(
